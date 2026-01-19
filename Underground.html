@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UNDERGROUND – Flicker + Legend</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#07080c;
+
+      --glow-red:#ff3a2f;
+      --glow-blue:#2b3cff;
+
+      --red-blur:26px;
+      --blue-blur:20px;
+
+      --red-flicker:2.6s;
+      --blue-flicker:2.1s;
+
+
+      --legend-bg: rgba(0,0,0,0.45);
+      --legend-border: rgba(255,255,255,0.10);
+      --legend-text: rgba(255,255,255,0.92);
+      --legend-sub: rgba(255,255,255,0.70);
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+    }
+
+    body{
+      background:var(--bg);
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+      cursor:pointer; 
+    }
+
+    .stage{
+      position:relative;
+      width:min(1400px,94vw);
+      padding:12vh 0;
+      isolation:isolate;
+    }
+
+    .logo{
+      position:relative;
+      width:100%;
+      aspect-ratio:16/6;
+    }
+
+    .layer{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      pointer-events:none;
+    }
+
+    .layer img,
+    .letters{
+      display:block;
+      width:100%;
+      height:auto;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+
+    .red-wrap{
+      z-index:1;
+      width:72%;
+    }
+    .red{
+      transform:scale(0.78);
+      filter:
+        blur(var(--red-blur))
+        drop-shadow(0 0 40px color-mix(in srgb, var(--glow-red) 60%, transparent))
+        drop-shadow(0 0 90px color-mix(in srgb, var(--glow-red) 35%, transparent));
+      animation:flickerRed var(--red-flicker) steps(1,end) infinite;
+      will-change: opacity;
+    }
+
+    .bg-wrap{
+      z-index:2;
+      width:120%;
+    }
+    .bg-wrap img{ filter:none; }
+
+    .blue-wrap{
+      z-index:3;
+      width:130%;
+    }
+    .blue{
+      transform:scaleX(1.28);
+      filter:
+        blur(var(--blue-blur))
+        drop-shadow(0 0 36px color-mix(in srgb, var(--glow-blue) 65%, transparent))
+        drop-shadow(0 0 80px color-mix(in srgb, var(--glow-blue) 40%, transparent));
+      animation:flickerBlue var(--blue-flicker) steps(1,end) infinite;
+      will-change: opacity;
+    }
+
+    .letters{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      z-index:4;
+      width:92%;
+      filter:none;
+      pointer-events:none;
+    }
+
+    @keyframes flickerRed{
+      0%,100%{opacity:0.85}
+      7%{opacity:0.2}
+      10%{opacity:0.9}
+      13%{opacity:0.35}
+      16%{opacity:0.9}
+    }
+
+    @keyframes flickerBlue{
+      0%,100%{opacity:0.9}
+      6%{opacity:0.3}
+      9%{opacity:0.95}
+      12%{opacity:0.45}
+      15%{opacity:0.9}
+    }
+
+    body.paused .red,
+    body.paused .blue{
+      animation-play-state: paused;
+      opacity: 0.92; 
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .red, .blue{ animation: none !important; }
+    }
+
+    .legend{
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 100;
+      width: min(520px, 58vw);
+      padding: 14px 14px 12px;
+      background: var(--legend-bg);
+      border: 1px solid var(--legend-border);
+      border-radius: 14px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+      cursor: default; 
+      font-family: 'VT323', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .legend h3{
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--legend-text);
+      letter-spacing: 1px;
+    }
+
+    .legend .grid{
+      display: grid;
+      grid-template-columns: 1fr 1fr; 
+      gap: 8px 16px;
+      align-items: center;
+    }
+
+    .legend .item{
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .legend .swatch{
+      height: 8px;
+      border-radius: 999px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .legend .name{
+      font-size: 16px;
+      color: var(--legend-text);
+      line-height: 1.1;
+    }
+
+    .legend .hint{
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--legend-sub);
+    }
+
+    .c-bakerloo{ background:#8b5a2b; }
+    .c-central{ background:#e41f1f; }
+    .c-circle{ background:#ffd200; }
+    .c-district{ background:#007a3d; }
+    .c-hc{ background:#f4a3b4; }
+    .c-jubilee{ background:#7f868a; }
+    .c-metropolitan{ background:#7b1b5a; }
+    .c-northern{ background:#111111; }
+    .c-piccadilly{ background:#24398d; }
+    .c-victoria{ background:#00a1de; }
+
+    @media (max-width: 720px){
+      .legend{
+        width: min(360px, 90vw);
+        right: 16px;
+        bottom: 16px;
+      }
+      .legend .grid{
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="stage">
+    <div class="logo" aria-label="UNDERGROUND logo">
+      <div class="layer red-wrap">
+        <img class="red" src="Component1.png" alt="">
+      </div>
+
+      <div class="layer bg-wrap">
+        <img src="background.png" alt="">
+      </div>
+
+      <div class="layer blue-wrap">
+        <img class="blue" src="Component2.png" alt="">
+      </div>
+
+      <img class="letters" src="UNDERGROUND.png" alt="UNDERGROUND">
+    </div>
+  </div>
+
+  <div class="legend" aria-label="Key to lines">
+    <h3>Key to lines</h3>
+
+    <div class="grid">
+      <div class="item">
+        <div class="swatch c-bakerloo"></div>
+        <div class="name">Bakerloo</div>
+      </div>
+
+      <div class="item">
+        <div class="swatch c-central"></div>
+        <div class="name">Central</div>
+      </div>
+
+      <div class="item">
+        <div class="swatch c-circle"></div>
+        <div class="name">Circle</div>
+      </div>
+
+      <div class="item">
+        <div class="swatch c-district"></div>
+        <div class="name">District</div>
+      </div>
+
+      <div class="item">
+        <div class="swatch c-hc"></div>
+        <div class="name">Hammersmith &amp; City</div>
+      </div>
+
+      <div class="item">
+        <div class="swatch c-jubilee"></div>
+        <div class="name">Jubilee</div>
+      </div>
+
+      <div class="item">
+        <div class="swatch c-metropolitan"></div>
+        <div class="name">Metropolitan</div>
+      </div>
+
+      <div class="item">
+        <div class="swatch c-northern"></div>
+        <div class="name">Northern</div>
+      </div>
+
+      <div class="item">
+        <div class="swatch c-piccadilly"></div>
+        <div class="name">Piccadilly</div>
+      </div>
+
+      <div class="item">
+        <div class="swatch c-victoria"></div>
+        <div class="name">Victoria</div>
+      </div>
+    </div>
+
+    <div class="hint">Click anywhere to toggle flicker.</div>
+  </div>
+
+  <script>
+    document.addEventListener("click", () => {
+      document.body.classList.toggle("paused");
+    });
+  </script>
+</body>
+</html>

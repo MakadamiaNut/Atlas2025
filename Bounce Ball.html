@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Bouncy Archive - Pixel Theme</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        :root {
+            --ball-color: #ffeb3b;
+            --block-brown: #8B4513;
+            --block-grass: #29A89C;
+            --sky-dark: #1a1a2e;
+            --ui-font: 'Press Start 2P', cursive;
+            --pink: #ff66c4;
+            --mint: #29A89C;
+        }
+
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: linear-gradient(to bottom, 
+                #FF66C4 0%, 
+                #C674A4 35%, 
+                #8C8284 70%, 
+                #29A89C 100%
+            );
+            color: white; 
+            font-family: var(--ui-font);
+        }
+
+        #star-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1;
+            transition: filter 0.8s ease;
+        }
+        .star {
+            position: absolute; background: white; border-radius: 50%;
+            animation: twinkle 2s infinite alternate;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        
+        #background-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0);
+            pointer-events: none;
+            z-index: 1;
+            transition: background 0.8s ease;
+        }
+
+        #world {
+            position: relative; width: 100%; height: 100vh;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 2;
+        }
+
+        .block-group {
+            position: absolute; display: flex; flex-direction: column; align-items: center;
+        }
+        .block {
+            width: 60px; height: 60px;
+            background: var(--block-brown);
+            border: 4px solid #4a250a;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: inset 0 8px 0 var(--block-grass);
+        }
+        .block-info {
+            position: absolute; top: -100px; white-space: nowrap;
+            font-size: 10px; text-align: center; line-height: 1.5;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        #ball {
+            width: 40px; height: 40px;
+            background: var(--ball-color);
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0; left: 0;
+            z-index: 10;
+            box-shadow: inset -4px -4px 10px rgba(0,0,0,0.4), 0 0 10px rgba(255,235,59,0.5);
+        }
+
+        #ui-layer {
+            position: fixed; top: 30px; right: 30px;
+            background: rgba(0,0,0,0.8); border: 4px solid white;
+            padding: 20px; 
+            z-index: 100;
+            width: 280px;
+            box-sizing: border-box;
+        }
+        .height-display { color: #ff66c4; font-size: 24px; margin: 0; text-align: right; }
+        .location-display { 
+            font-size: 10px; 
+            margin-top: 10px; 
+            color: #aaa; 
+            text-align: right;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+        
+        #image-popup {
+            position: fixed; 
+            bottom: 30px;
+            right: 30px;
+            width: 280px;
+            height: 230px;
+            border: 4px solid white;
+            background: #000;
+            overflow: hidden;
+            display: none;
+            z-index: 100;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        #image-popup-title {
+            font-size: 8px;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        #image-popup img {
+            width: 100%;
+            height: calc(100% - 20px);
+            object-fit: cover;
+        }
+        #image-popup.show {
+            display: block;
+        }
+
+        #minimap {
+            position: fixed;
+            top: 178px;
+            right: 30px;
+            width: 280px;
+            height: 200px;
+            background: rgba(0,0,0,0.8);
+            border: 4px solid white;
+            padding: 10px;
+            box-sizing: border-box;
+            z-index: 100;
+            display: none;
+        }
+        #minimap.show {
+            display: block;
+        }
+        #minimap-title {
+            font-size: 8px;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        #minimap-canvas {
+            width: 100%;
+            height: calc(100% - 20px);
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body>
+
+<div id="star-container"></div>
+<div id="background-overlay"></div>
+
+<div id="ui-layer">
+    <p class="height-display"><span id="height-val">0</span>m ▲</p>
+    <p class="location-display" id="loc-text">WAITING...</p>
+</div>
+
+<div id="minimap">
+    <div id="minimap-title">⛰ ELEVATION MAP ⛰</div>
+    <canvas id="minimap-canvas"></canvas>
+</div>
+
+<div id="image-popup">
+    <img id="popup-img" src="" alt="Location">
+</div>
+
+<div id="world">
+    <div id="ball"></div>
+</div>
+
+<script>
+    const data = [
+        { name: "Start Point", country: "Ground", h: 0, x: 50, y: 50, img: "" },
+        { name: "Clifton Observatory", country: "UK", h: 102, x: 350, y: 150, img: "clifton.jpg" },
+        { name: "Cheddar Gorge", country: "UK", h: 178, x: 650, y: 300, img: "cheddar.jpg" },
+        { name: "Glencoe", country: "UK", h: 308, x: 950, y: 450, img: "glencoe.jpg" },
+        { name: "Fussen", country: "Germany", h: 844, x: 1250, y: 600, img: "hohen.jpg" },
+        { name: "Werfen", country: "Austria", h: 1657, x: 1550, y: 750, img: "eisen.jpg" },
+        { name: "Mont Blanc", country: "France", h: 4809, x: 1850, y: 900, img: "montblanc.jpg" }
+    ];
+
+    const world = document.getElementById('world');
+    const ball = document.getElementById('ball');
+    const heightVal = document.getElementById('height-val');
+    const locText = document.getElementById('loc-text');
+    const imagePopup = document.getElementById('image-popup');
+    const popupImg = document.getElementById('popup-img');
+    const minimap = document.getElementById('minimap');
+    const minimapCanvas = document.getElementById('minimap-canvas');
+    const ctx = minimapCanvas.getContext('2d');
+    const backgroundOverlay = document.getElementById('background-overlay');
+
+    let currentIdx = -1;
+    let isJumping = false;
+    let idleBounce;
+
+    minimapCanvas.width = 260;
+    minimapCanvas.height = 160;
+
+    for(let i=0; i<100; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + 'vw';
+        star.style.top = Math.random() * 100 + 'vh';
+        star.style.width = star.style.height = (Math.random() * 3 + 1) + 'px';
+        star.style.animationDelay = Math.random() * 2 + 's';
+        document.getElementById('star-container').appendChild(star);
+    }
+
+    data.forEach((item, i) => {
+        const group = document.createElement('div');
+        group.className = 'block-group';
+        group.style.left = item.x + 'px';
+        group.style.bottom = item.y + 'px';
+        
+        group.innerHTML = `
+            <div class="block-info">${item.country}<br>${item.name}</div>
+            <div class="block"></div>
+        `;
+        world.appendChild(group);
+    });
+
+    function setIdle() {
+        const startBlock = data[0];
+        const startX = startBlock.x + 10;
+        const startY = startBlock.y + 60;
+        gsap.set(ball, { x: startX, y: -startY });
+        
+        idleBounce = gsap.to(ball, {
+            y: -(startY + 30),
+            duration: 0.5,
+            repeat: -1,
+            yoyo: true,
+            ease: "power1.inOut"
+        });
+    }
+    setIdle();
+
+    window.addEventListener('click', () => {
+        if (isJumping) return;
+        if (currentIdx >= data.length - 2) {
+            backgroundOverlay.style.background = 'rgba(0, 0, 0, 0)';
+            location.reload();
+            return;
+        }
+
+        if (idleBounce) idleBounce.kill();
+        isJumping = true;
+        currentIdx++;
+        
+        const target = data[currentIdx + 1];
+        
+        const targetX = target.x + 10;
+        const targetY = target.y + 60;
+
+        const progress = (currentIdx + 1) / (data.length - 1);
+        const overlayOpacity = progress * 0.6; 
+        
+        backgroundOverlay.style.background = `rgba(0, 0, 0, ${overlayOpacity})`;
+
+        gsap.to(ball, {
+            x: targetX,
+            duration: 0.8,
+            ease: "none"
+        });
+
+        gsap.to(ball, {
+            y: -(targetY + 120),
+            duration: 0.4,
+            ease: "power2.out",
+            onComplete: () => {
+                gsap.to(ball, {
+                    y: -targetY,
+                    duration: 0.4,
+                    ease: "bounce.out",
+                    onComplete: () => {
+                        isJumping = false;
+                        updateUI(target);
+                        startStationaryBounce(targetX, targetY);
+                    }
+                });
+            }
+        });
+
+        if (currentIdx > 0) {
+            gsap.to(world, {
+                x: -targetX + (window.innerWidth / 3),
+                y: targetY - (window.innerHeight / 2),
+                duration: 0.8,
+                ease: "power2.inOut"
+            });
+        }
+    });
+
+    function startStationaryBounce(x, y) {
+        if(idleBounce) idleBounce.kill();
+        idleBounce = gsap.to(ball, {
+            y: -(y + 30),
+            duration: 0.5,
+            repeat: -1,
+            yoyo: true,
+            ease: "power1.inOut"
+        });
+    }
+
+    function updateUI(target) {
+        locText.innerText = `${target.country} | ${target.name}`;
+        
+        minimap.classList.add('show');
+        drawMinimap();
+        
+        if(target.img) {
+            popupImg.src = target.img;
+            imagePopup.classList.add('show');
+        } else {
+            imagePopup.classList.remove('show');
+        }
+        
+        let startH = parseInt(heightVal.innerText);
+        gsap.to({val: startH}, {
+            val: target.h,
+            duration: 0.5,
+            onUpdate: function() {
+                heightVal.innerText = Math.floor(this.targets()[0].val);
+            }
+        });
+    }
+
+    function drawMinimap() {
+        ctx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+        
+        const maxHeight = Math.max(...data.map(d => d.h));
+        const padding = 20;
+        const graphWidth = minimapCanvas.width - padding * 2;
+        const graphHeight = minimapCanvas.height - padding * 2;
+        
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        for(let i = 0; i <= 4; i++) {
+            const y = padding + (graphHeight / 4) * i;
+            ctx.beginPath();
+            ctx.moveTo(padding, y);
+            ctx.lineTo(minimapCanvas.width - padding, y);
+            ctx.stroke();
+        }
+        
+        ctx.strokeStyle = '#29A89C';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        data.forEach((point, i) => {
+            const x = padding + (graphWidth / (data.length - 1)) * i;
+            const y = minimapCanvas.height - padding - (point.h / maxHeight) * graphHeight;
+            
+            if(i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        ctx.stroke();
+        
+        data.forEach((point, i) => {
+            const x = padding + (graphWidth / (data.length - 1)) * i;
+            const y = minimapCanvas.height - padding - (point.h / maxHeight) * graphHeight;
+            
+            if(i === currentIdx + 1) {
+                ctx.fillStyle = '#ff66c4';
+                ctx.fillRect(x - 4, y - 4, 8, 8);
+            } else if(i <= currentIdx + 1) {
+                ctx.fillStyle = '#29A89C';
+                ctx.fillRect(x - 3, y - 3, 6, 6);
+            } else {
+                ctx.fillStyle = '#666'; 
+                ctx.fillRect(x - 2, y - 2, 4, 4);
+            }
+        });
+        
+        ctx.fillStyle = '#aaa';
+        ctx.font = '8px "Press Start 2P"';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${Math.floor(maxHeight)}m`, 5, padding + 5);
+        ctx.fillText('0m', 5, minimapCanvas.height - padding + 5);
+    }
+</script>
+</body>
+</html>

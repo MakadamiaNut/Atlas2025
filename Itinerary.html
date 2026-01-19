@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Route Slider Module - No Text UI</title>
+
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+  <style>
+    :root{ --pink:#ff66c4; --mint:#29A89C; }
+    html, body { height:100%; margin:0; background:#000; overflow: hidden; }
+    
+    .mapWrap{
+      position: relative;
+      width: min(1400px, 98vw);
+      height: min(88vh, 820px);
+      margin: 10px auto;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #000;
+    }
+    #map{ position:absolute; inset:0; z-index:0; }
+    .mapboxgl-ctrl-bottom-left, .mapboxgl-ctrl-bottom-right{ display:none !important; }
+
+    .screen-coord {
+      position: absolute;
+      z-index: 9999;
+      color: var(--pink);
+      font-family: 'Lucida Console', Monaco, monospace; 
+      font-size: 22px; font-weight: 900; letter-spacing: 1px;
+      pointer-events: none;
+      text-shadow: 0 0 12px rgba(255, 102, 196, 0.6);
+    }
+    #lonDisplay { left: 20px; top: 20px; writing-mode: vertical-rl; transform: rotate(180deg); }
+    #latDisplay { right: 20px; bottom: 25px; }
+
+    .controlBar {
+      position: absolute; left: 50%; bottom: 35px; transform: translateX(-50%);
+      width: min(700px, 75%); display: flex; align-items: center;
+      padding: 12px 25px; border-radius: 999px;
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(12px); z-index: 9999 !important;
+    }
+
+    input[type="range"]{
+      flex: 1; -webkit-appearance:none; appearance:none; height: 6px;
+      border-radius: 999px; outline:none; background: rgba(255,255,255,0.2);
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none; width: 60px; height: 60px;
+      background: url("./plane.png") no-repeat center / contain; 
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="mapWrap">
+    <div id="map"></div>
+    <div id="lonDisplay" class="screen-coord">W 00.000000°</div>
+    <div id="latDisplay" class="screen-coord">N 00.000000°</div>
+
+    <div class="controlBar">
+      <input id="routeSlider" type="range" min="0" max="1000" value="0" />
+    </div>
+  </div>
+
+<script>
+  mapboxgl.accessToken = "pk.eyJ1IjoidGFldjAyMTgiLCJhIjoiY21qbmF4czZhMHBwcjNjc2U3MWhwbmppbyJ9.17aG4s-bKLUwLNK4W2nmxQ";
+
+  const slider = document.getElementById("routeSlider");
+  const lonDisplay = document.getElementById("lonDisplay");
+  const latDisplay = document.getElementById("latDisplay");
+
+  let routeLine = null, routeLenKm = 0, stopsFeatures = [];
+  let isFinale = false, animationFrameId = null;
+
+  const map = new mapboxgl.Map({
+    container: "map",
+    style: "mapbox://styles/mapbox/dark-v11",
+    center: [10, 45],
+    zoom: 2.2,
+    projection: "globe"
+  });
+
+  function ensureLayers() {
+    map.setFog({ "range": [0.5, 10], "color": "#000", "high-color": "#29A89C", "space-color": "#000", "star-intensity": 0.5 });
+    if (!map.getSource("route")) map.addSource("route", { type: "geojson", data: "./route.geojson" });
+    if (!map.getSource("stops")) map.addSource("stops", { type: "geojson", data: "./stops.geojson", generateId: true });
+
+    if (!map.getSource("route-progress-src")) {
+      map.addSource("route-progress-src", {
+        type: "geojson",
+        data: { type: "Feature", geometry: { type: "LineString", coordinates: [] } }
+      });
+    }
+
+    if (!map.getLayer("route-base")) {
+      map.addLayer({
+        id: "route-base",
+        type: "line",
+        source: "route",
+        paint: { "line-width": 2, "line-color": "#fff", "line-opacity": 0.1 }
+      });
+    }
+
+    if (!map.getLayer("route-progress")) {
+      map.addLayer({
+        id: "route-progress",
+        type: "line",
+        source: "route-progress-src",
+        paint: { "line-width": 3, "line-color": "#ff66c4", "line-opacity": 0.8 }
+      });
+    }
+
+    if (!map.getLayer("stops-symbols")) {
+      map.addLayer({
+        id: "stops-symbols",
+        type: "symbol",
+        source: "stops",
+        layout: {
+          "text-field": "✦",
+          "text-size": 18,
+          "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"]
+        },
+        paint: {
+          "text-color": "#ff66c4",
+          "text-halo-color": "#29A89C",
+          "text-halo-width": 1.5,
+          "text-opacity": [
+            "case",
+            ["boolean", ["feature-state", "twinkle_on"], false],
+            ["feature-state", "twinkle_val"],
+            ["case", ["boolean", ["feature-state", "active"], false], 1.0, 0.1]
+          ]
+        }
+      });
+    }
+  }
+
+  function startFinale() {
+    isFinale = true;
+
+    map.setPaintProperty("route-progress", "line-opacity", 0);
+    map.setPaintProperty("route-base", "line-opacity", 0);
+
+    stopsFeatures.forEach((_, i) => map.setFeatureState({ source: 'stops', id: i }, { twinkle_on: true }));
+    map.easeTo({ center: [10, 45], zoom: 1.6, duration: 3000, essential: true });
+
+    const pointStates = stopsFeatures.map((_, index) => ({
+      id: index,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.1 + Math.random() * 0.15
+    }));
+
+    function animate() {
+      if (!isFinale) return;
+      pointStates.forEach(p => {
+        p.phase += p.speed;
+        map.setFeatureState(
+          { source: 'stops', id: p.id },
+          { twinkle_val: Math.sin(p.phase) * 0.4 + 0.6 }
+        );
+      });
+      animationFrameId = requestAnimationFrame(animate);
+    }
+    animate();
+  }
+
+  async function buildRouteLine() {
+    try {
+      const [routeRes, stopsRes] = await Promise.all([
+        fetch("./route.geojson"),
+        fetch("./stops.geojson")
+      ]);
+
+      const routeJson = await routeRes.json();
+      const stopsJson = await stopsRes.json();
+
+      routeLine = routeJson.features ? routeJson.features[0] : routeJson;
+      routeLenKm = turf.length(routeLine, { units: "kilometers" });
+
+      stopsFeatures = stopsJson.features.map(f => {
+        const snapped = turf.nearestPointOnLine(routeLine, f);
+        return { ...f, distOnLine: snapped.properties.location };
+      });
+
+      const bbox = turf.bbox(routeLine);
+      map.fitBounds(bbox, { padding: 80, duration: 1500 });
+      updateProgress(0);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function updateProgress(t) {
+    if (!routeLine || routeLenKm === 0) return;
+
+    const currentDist = routeLenKm * t;
+
+    const pt = turf.along(routeLine, Math.max(0, currentDist), { units: "kilometers" });
+    const [lon, lat] = pt.geometry.coordinates;
+
+    lonDisplay.textContent = `${lon >= 0 ? 'E' : 'W'} ${Math.abs(lon).toFixed(6)}°`;
+    latDisplay.textContent = `${lat >= 0 ? 'N' : 'S'} ${Math.abs(lat).toFixed(6)}°`;
+
+    const src = map.getSource("route-progress-src");
+    if (src) {
+      src.setData(turf.lineSliceAlong(routeLine, 0, currentDist, { units: "kilometers" }));
+    }
+
+    stopsFeatures.forEach((stop, index) => {
+      if (currentDist >= stop.distOnLine - 1) {
+        map.setFeatureState({ source: 'stops', id: index }, { active: true });
+      } else {
+        map.setFeatureState({ source: 'stops', id: index }, { active: false, twinkle_on: false });
+      }
+    });
+
+    if (t >= 0.999) {
+      if (!isFinale) startFinale();
+    } else if (isFinale) {
+      isFinale = false;
+      cancelAnimationFrame(animationFrameId);
+      map.setPaintProperty("route-progress", "line-opacity", 0.8);
+      map.setPaintProperty("route-base", "line-opacity", 0.1);
+    }
+
+    slider.style.background =
+      `linear-gradient(90deg, var(--pink) ${t*100}%, rgba(255,255,255,0.1) ${t*100}%)`;
+  }
+
+  slider.addEventListener("input", (e) => updateProgress(e.target.value / 1000));
+  map.on("load", () => { ensureLayers(); buildRouteLine(); });
+  map.on("style.load", () => { ensureLayers(); });
+</script>
+</body>
+</html>

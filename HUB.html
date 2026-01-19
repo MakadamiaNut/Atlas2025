@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 Exchange Archive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #F5F1E8;
+            color: #2a2a2a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 300;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            letter-spacing: 0.2em;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 30px;
+            }
+        }
+
+        .project-card {
+            aspect-ratio: 1 / 1;
+            background-color: transparent;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .thumbnail {
+            width: 100%;
+            height: calc(100% - 40px);
+            background-color: #fff;
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+            border: 1px solid #e0e0e0;
+        }
+
+        .project-card:hover .thumbnail {
+            transform: scale(1.02);
+            border-color: #29A89C;
+        }
+
+        .project-title {
+            font-size: 11px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 500;
+            text-align: left;
+            width: 100%;
+        }
+
+        footer {
+            margin-top: 100px;
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            color: #999;
+        }
+
+        .thumbnail::before {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+        }
+
+        .thumbnail[style*="background-image"]::before {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Exchange Archive</h1>
+        <p class="subtitle">Fall Semester 2025</p>
+    </header>
+
+    <div class="grid">
+        <a href="Big Wheel.html" class="project-card">
+            <div class="thumbnail" style="background-image: url('BigWheel.png')"></div>
+            <div class="project-title">Big Wheel</div>
+        </a>
+
+        <a href="Itinerary.html" class="project-card">
+            <div class="thumbnail" style="background-image: url('Itinerary.png')"></div>
+            <div class="project-title">Itinerary</div>
+        </a>
+
+        <a href="london.html" class="project-card">
+            <div class="thumbnail" style="background-image: url('LondonThumb.png')"></div>
+            <div class="project-title">London</div>
+        </a>
+
+        <a href="Atlas.html" class="project-card">
+            <div class="thumbnail" style="background-image: url('Atlas.png')"></div>
+            <div class="project-title">Atlas</div>
+        </a>
+
+        <a href="Prism.html" class="project-card">
+            <div class="thumbnail" style="background-image: url('Prism.png')"></div>
+            <div class="project-title">Prism</div>
+        </a>
+
+        <a href="Paperweight.html" class="project-card">
+            <div class="thumbnail" style="background-image: url('PaperWeight.png')"></div>
+            <div class="project-title">Paper Weight</div>
+        </a>
+
+        <a href="Underground.html" class="project-card">
+            <div class="thumbnail" style="background-image: url('UndergroundThumb.png')"></div>
+            <div class="project-title">Underground</div>
+        </a>
+
+        <a href="Lakes.html" class="project-card">
+            <div class="thumbnail" style="background-image: url('Lakes.png')"></div>
+            <div class="project-title">Lakes</div>
+        </a>
+    </div>
+
+    <footer>
+        <p>Seohui Lim</p>
+    </footer>
+</body>
+</html>

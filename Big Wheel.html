@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotating City Wheel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #canvas {
+            display: block;
+        }
+
+        .visible-point {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #ff00e1;
+            border-radius: 50%;
+            top: 50%;
+            left: 42%; 
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            box-shadow: 0 0 25px rgba(0, 128, 255, 1);
+            transition: background-color 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="visible-point"></div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const visiblePoint = document.querySelector('.visible-point');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const baseCities = [
+            "Zagreb, Croatia",
+            "Samobor, Croatia",
+            "Ljubljana, Slovenia",
+            "Bled, Slovenia",
+            "Salzburg, Austria",
+            "Werfen, Austria",
+            "Munich, Germany",
+            "Füssen, Germany",
+            "Nördlingen, Germany",
+            "Brussels, Belgium",
+            "Antwerp, Belgium",
+            "Amsterdam, Netherlands",
+            "The Hague, Netherlands",
+            "London, UK",
+            "Bristol, UK",
+            "Cheddar, UK",
+            "Belfast, Northern Ireland",
+            "Edinburgh, Scotland",
+            "Paris, France",
+            "Tromsø, Norway",
+            "London, UK",
+            "Maastricht, Netherlands",
+            "Straasbourg, France",
+            "Larnaca, Cyprus",
+            "Nicosia, Cyprus",
+            "Ayia Napa, Cyprus",
+            "London, UK",
+            "Geneva, Switzerland",
+            "Annecy, France",
+            "Chamonix, France",
+            "London, UK"
+        ];
+
+        const cities = [...baseCities, ...baseCities, ...baseCities.slice(0, Math.floor(baseCities.length / 2))];
+
+        const centerX = canvas.width * 0.15;
+        const centerY = canvas.height / 2;
+        const radius = canvas.width * 0.5;
+        const numSlices = cities.length;
+        const anglePerSlice = (Math.PI * 2) / numSlices;
+        
+        let rotation = Math.PI;
+        const rotationSpeed = 0.0015;
+
+        const screenCenterX = canvas.width / 2;
+
+        const labelOffsets = new Array(numSlices).fill(0);
+        const targetOffsets = new Array(numSlices).fill(0);
+
+        function drawWheel() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.font = '22px Arial';
+
+            let closestIndex = -1;
+            let minDistanceToCenter = Infinity;
+
+            for (let i = 0; i < numSlices; i++) {
+                const angle = rotation + i * anglePerSlice;
+                const labelRadius = radius * 0.7;
+                const labelX = centerX + Math.cos(angle) * labelRadius;
+                
+                const distanceToCenter = Math.abs(labelX - screenCenterX);
+                
+                if (distanceToCenter < minDistanceToCenter) {
+                    minDistanceToCenter = distanceToCenter;
+                    closestIndex = i;
+                }
+            }
+
+            const isBristolInCenter = closestIndex !== -1 && 
+                                       minDistanceToCenter < 100 && 
+                                       cities[closestIndex] === "Bristol, UK";
+
+            for (let i = 0; i < numSlices; i++) {
+                const angle = rotation + i * anglePerSlice;
+                
+                const labelRadius = radius * 0.7;
+                let labelX = centerX + Math.cos(angle) * labelRadius;
+                let labelY = centerY + Math.sin(angle) * labelRadius;
+
+                if (i === closestIndex && minDistanceToCenter < 100) {
+                    targetOffsets[i] = 80;
+                } else {
+                    targetOffsets[i] = 0;
+                }
+
+                labelOffsets[i] += (targetOffsets[i] - labelOffsets[i]) * 0.15;
+
+                labelX += Math.cos(angle) * labelOffsets[i];
+                labelY += Math.sin(angle) * labelOffsets[i];
+
+                if (isBristolInCenter && i === closestIndex) {
+                    ctx.fillStyle = '#ff66c4';
+                } else {
+                    ctx.fillStyle = '#fff';
+                }
+
+                ctx.save();
+                ctx.translate(labelX, labelY);
+                ctx.rotate(angle);
+                ctx.textAlign = 'left';
+                ctx.fillText(cities[i], 10, 5);
+                ctx.restore();
+            }
+
+            if (isBristolInCenter) {
+                visiblePoint.style.backgroundColor = '#29A89C';
+            } else {
+                visiblePoint.style.backgroundColor = '#ff00e1';
+            }
+        }
+
+        function animate() {
+            rotation -= rotationSpeed;
+            drawWheel();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
