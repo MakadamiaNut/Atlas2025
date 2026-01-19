@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lake Archiving Module</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --color-freshwater: #3d6c7b;  
+            --color-saline: #8f9752;     
+            --color-mineral: #612b22;    
+            --color-artificial: #704369;  
+            --color-brackish: #4a5d23;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+            font-family: 'Pretendard', sans-serif;
+            overflow-y: auto;
+        }
+
+        /* 범례 */
+        .legend-box {
+            margin-top: 30px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            backdrop-filter: blur(5px);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .color-dot { width: 12px; height: 12px; border-radius: 2px; }
+
+        /* 그리드 */
+        .lake-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 95vw;
+            max-width: 1200px;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+        @media (min-width: 768px) {
+            .lake-grid { grid-template-columns: repeat(4, 1fr); gap: 30px; }
+        }
+
+        .lake-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer; /* 클릭 가능하다는 표시 */
+        }
+
+        .svg-wrapper {
+            width: 85%;
+            height: 85%;
+            transition: transform 0.4s ease;
+        }
+        .lake-container:hover .svg-wrapper { transform: scale(1.1); }
+
+        svg { width: 100%; height: 100%; display: block; overflow: visible; }
+        .hologram-rect { mix-blend-mode: screen; opacity: 0; transition: opacity 0.4s ease; }
+        .lake-container:hover .hologram-rect { opacity: 1; }
+        .lake-label { margin-top: 10px; color: rgba(255,255,255,0.5); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; }
+
+        /* --- 모달(상세보기창) 스타일 --- */
+        #modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none; /* 기본은 숨김 */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(15px);
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            position: relative;
+        }
+
+        @media (min-width: 768px) {
+            .modal-content { flex-direction: row; align-items: center; }
+        }
+
+        .modal-view-left { flex: 1; display: flex; justify-content: center; align-items: center; }
+        .modal-view-right { flex: 1; }
+
+        .modal-image {
+            width: 100%;
+            max-height: 50vh;
+            object-fit: cover;
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .modal-info h2 { font-size: 32px; margin-bottom: 10px; letter-spacing: 0.1em; }
+        .modal-info p { color: rgba(255,255,255,0.7); line-height: 1.6; font-size: 14px; }
+        
+        .close-btn {
+            position: absolute;
+            top: -40px; right: 0;
+            background: none; border: none; color: white;
+            font-size: 30px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="legend-box">
+    <div class="legend-item"><div class="color-dot" style="background: var(--color-freshwater)"></div> Freshwater</div>
+    <div class="legend-item"><div class="color-dot" style="background: var(--color-saline)"></div> Saline</div>
+    <div class="legend-item"><div class="color-dot" style="background: var(--color-mineral)"></div> Mineral-Rich</div>
+    <div class="legend-item"><div class="color-dot" style="background: var(--color-artificial)"></div> Artificial</div>
+    <div class="legend-item"><div class="color-dot" style="background: var(--color-brackish)"></div> Brackish / Variable</div>
+</div>
+
+<div class="lake-grid" id="grid"></div>
+
+<div id="modal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal()">×</button>
+        <div class="modal-view-left" id="modal-svg-target">
+            </div>
+        <div class="modal-view-right">
+            <div class="modal-info">
+                <h2 id="modal-title">Lake Name</h2>
+                <img id="modal-img" class="modal-image" src="" alt="lake photo">
+                <p id="modal-desc" style="margin-top:20px;">이 호수에 대한 상세 설명이 여기에 들어갑니다.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const lakeData = [
+        { name: "Bled", type: "freshwater", img: "bled.jpg", desc: "Slovenia bled | 46.37N 14.11E | 2025.08.19", d: "M719.725,1419.57 L781.398,1340.14 L847.253,1182.65 L941.134,1027.78 L935.982,983.767 L904.589,942.406 L917.364,881.669 L994.427,798.413 L1043.5,789.965 L1104.18,818.182 L1483.61,885.655 L1599.21,861.825 L1667.72,868.207 L1775.02,769.465 L1933.7,751.416 L1970.12,716.72 L2263.06,651.128 L2442.42,560.256 L2713.18,517.46 L2878.75,610.835 L2918.29,660.056 L2904.49,730.299 L2859.86,831.147 L2874.65,836.638 L2859.52,883.881 L2746.95,1108.99 L2624.14,1204.45 L2544.13,1223.17 L2388.3,1325.58 L2324.83,1321.16 L2310.16,1357.57 L2236.33,1384.95 L2122.21,1472.04 L2110.09,1525.57 L2156.15,1608.91 L2172.2,1692.23 L2155.7,1776.38 L2131.74,1794.32 L2061.25,1808.23 L1808.31,1785.17 L1646.97,1797.64 L1501.88,1877.5 L1439.43,1980.49 L1329.68,2033.38 L1008.46,1998.57 L949.577,1971.4 L866.407,1791.43 L865.796,1601.96 L688.489,1646.44 L605.233,1517.53 L719.725,1419.57"},
+        { name: "Alpsee", type: "freshwater", img: "alpsee.jpg", desc: "Germany Fussen | 47.56N 10.75E | 2025.08.26", d: "M923,716 L911,757 L903,782 L845,869 L842,906 L834,921 L821,924 L801,924 L787,926 L750,926 L695,948 L661,957 L647,975 L572,1032 L566,1045 L549,1075 L511,1145 L499,1168 L485,1218 L464,1294 L440,1389 L430,1417 L430,1439 L428,1453 L419,1452 L412,1448 L395,1431 L379,1402 L342,1379 L312,1367 L280,1313 L276,1286 L268,1266 L231,1228 L213,1217 L198,1218 L153,1181 L107,1157 L75,1137 L58,1134 L52,1129 L60,1111 L62,1088 L69,991 L62,973 L48,960 L40,924 L24,897 L37,867 L41,836 L51,814 L58,805 L58,800 L51,781 L37,772 L30,764 L34,757 L22,749 L30,748 L40,752 L59,764 L72,751 L95,758 L116,751 L126,752 L133,750 L185,713 L213,702 L250,702 L280,720 L320,707 L339,714 L352,701 L362,678 L362,657 L368,648 L376,647 L382,654 L447,639 L461,657 L491,661 L559,633 L579,636 L623,617 L679,562 L743,507 L754,502 L773,471 L786,470 L818,417 L836,396 L846,395 L842,406 L846,412 L847,408 L858,415 L885,410 L898,409 L924,430 L961,425 L974,427 L989,424 L996,427 L998,432 L995,447 L981,468 L977,487 L963,544 L954,613 L923,716 Z" },
+        { name: "Prestvannet", type: "brackish", img: "prestvannet.jpg", desc:"Norway Tromso | 69.66N 18.93E | 2025.11.13", d: "M118,524 L140,574 L120,624 L106,732 L80,799 L64,805 L51,895 L26,932 L24,1011 L54,1103 L108,1109 L152,1089 L209,1030 L218,999 L304,974 L334,1007 L310,1030 L332,1099 L393,1141 L430,1123 L437,1092 L477,1042 L507,1025 L617,1009 L631,996 L623,980 L627,955 L689,863 L718,821 L745,823 L756,802 L773,796 L794,734 L856,684 L864,646 L942,557 L953,542 L954,525 L912,532 L909,517 L923,488 L896,486 L889,505 L828,509 L802,496 L767,480 L754,438 L690,434 L578,459 L565,480 L517,475 L505,465 L483,490 L474,467 L498,450 L363,429 L356,406 L343,417 L266,404 L270,419 L261,427 L270,450 L180,480 L135,461 L121,524 Z" },
+        { name: "Aliki", type: "saline", img:"aliki.jpg", desc:"Cyprus Larnaca | 34.89N 33.61E | 2025.12.11", d: "M2129.29,1848.23 L2038.34,2010.49 L1929.18,1957.76 L1829.73,1961.63 L1771.39,1998.99 L1746.04,2002.97 L1666.96,1970.15 L1632.08,1944.36 L1612.03,1827.66 L1589.68,1784.11 L1408.7,1762.6 L1351.99,1704.39 L1255.26,1676.97 L1230.06,1658.12 L1223.98,1647.25 L1232.62,1637.8 L1267.96,1647.22 L1290.56,1616 L1305.29,1574.27 L1351.29,1545.23 L1394.56,1532.54 L1613.52,1498.26 L1717.91,1502.51 L1866.92,1530.56 L1905.39,1509.19 L1867.11,1520.92 L1817.5,1513.53 L1744.7,1450.83 L1691.14,1344.64 L1708.08,1262.49 L1704.85,1237.51 L1475.57,1124.69 L1426.13,1134.42 L1413.24,1127.55 L1436.34,1097.93 L1523.44,1047.74 L1605.8,962.161 L1623.5,924.624 L1551.86,951.795 L1426.52,1026.87 L1381.9,1023.23 L1282,988.816 L1184,1061.63 L1048.71,1093.55 L998.283,1088.81 L962.565,1071.77 L888.096,1017.26 L834.481,990.731 L809.545,950.395 L812.52,929.741 L883.533,863.515 L936.11,856.578 L925.81,816.295 L999.908,737.176 L1049.01,735.02 L1075.17,748.072 L1128.07,737.395 L1131.72,731.229 L1115.65,699.342 L1123.84,675.095 L1200.65,688.584 L1241.61,682.409 L1236.27,649.975 L1220.19,644.337 L1207.45,610.113 L1171.02,624.559 L1158.45,659.681 L1124.4,629.317 L1053.36,633.114 L1027.24,598.379 L1055.12,526.968 L1004.26,499.881 L1022.6,486.56 L1075.91,492.461 L1099.16,479.406 L1174.01,472.502 L1210.01,450.853 L1261.75,397.263 L1281.63,403.652 L1303.99,437.428 L1327.51,441.976 L1478.69,432.61 L1512.76,443.082 L1571.91,443.615 L1752.52,485.048 L1811.88,513.675 L1836.22,555.732 L1980.48,596.383 L2129.04,675.496 L2345.4,847.56 L2403.61,923.585 L2450.35,960.747 L2487.41,1028.6 L2489.03,1128.49 L2449.7,1169.01 L2441.06,1155.5 L2433.52,1157.07 L2405.4,1288.99 L2287.8,1475.98 L2181.94,1598.64 L2162.99,1631.59 L2105.09,1673.65 L2095.17,1755.59 L2127.06,1810.64 L2129.29,1848.23" },
+        { name: "Kokkinolimni", type: "mineral", img: "red.jpg", desc: "Cyprus Mitsero | 34.67N 32.97E | 2025.12.12", d: "M998,550 L1020,454 L1001,365 L926,366 L834,332 L721,303 L631,313 L587,296 L525,355 L473,375 L386,379 L312,386 L256,436 L205,476 L151,552 L57,621 L24,680 L50,746 L100,779 L236,712 L276,701 L338,703 L388,748 L472,779 L538,748 L590,716 L633,693 L692,685 L746,663 L809,614 L875,630 L921,606 L954,579 L998,550 Z" },
+        { name: "Annecy", type: "freshwater", img: "annecy.jpg", desc:"France Annecy | 45.86N 6.16E | 2025.12.22", d: "M586,527 L662,555 L725,544 L730,576 L767,591 L768,613 L786,633 L775,662 L780,683 L792,700 L831,705 L855,782 L866,851 L845,891 L851,922 L825,928 L787,962 L748,953 L728,790 L703,728 L716,699 L699,627 L698,641 L670,661 L619,660 L597,639 L581,641 L529,590 L500,550 L493,520 L440,524 L397,503 L380,508 L360,491 L356,453 L317,437 L315,413 L299,400 L309,384 L294,383 L303,355 L288,193 L296,129 L240,92 L234,81 L243,79 L217,59 L222,44 L197,41 L193,35 L219,40 L277,4 L297,30 L317,7 L375,0 L395,9 L443,119 L474,142 L497,236 L570,356 L561,391 L585,430 L578,455 L589,492 L586,527 Z" },
+        { name: "Leman", type: "freshwater", img:"leman.jpg", desc:"Switzerland Geneve | 46.45N 6.53E | 2025.12.21", d: "M370,444 L310,512 L302,522 L279,543 L265,547 L239,599 L220,607 L215,606 L237,515 L283,451 L315,422 L342,419 L359,385 L415,347 L519,334 L580,291 L663,289 L908,340 L983,370 L1001,383 L1009,399 L996,415 L963,409 L933,424 L798,401 L617,414 L584,404 L547,434 L459,470 L412,440 L370,444 Z" },
+        { name: "Gaillands", type: "artificial",img:"gaillands.jpg", desc:"France Chamonix | 45.92N 6.88E | 2025.12.23", d: "M252,654 L249,657 L247,661 L246,667 L254,675 L332,725 L342,726 L354,725 L360,721 L615,540 L843,391 L940,338 L959,327 L968,322 L974,317 L974,309 L952,282 L788,118 L776,117 L769,114 L765,116 L768,120 L768,124 L252,654 M603,421 L603,431 L614,439 L629,442 L644,435 L646,423 L636,413 L621,411 L610,415 L603,421 Z" }
+    ];
+
+    function getColorByType(type) {
+        const colors = {
+            freshwater: 'var(--color-freshwater)',
+            saline: 'var(--color-saline)',
+            mineral: 'var(--color-mineral)',
+            artificial: 'var(--color-artificial)',
+            brackish: 'var(--color-brackish)'
+        };
+        return colors[type] || '#1a1a1a';
+    }
+
+    const grid = document.getElementById('grid');
+
+    lakeData.forEach((lake, index) => {
+        const container = document.createElement('div');
+        container.className = 'lake-container';
+
+        // SVG 영역 계산 (생략된 d값은 이전과 동일하게 유지)
+        const ns = "http://www.w3.org/2000/svg";
+        const tempSvg = document.createElementNS(ns, "svg");
+        const tempPath = document.createElementNS(ns, "path");
+        tempPath.setAttribute("d", lake.d);
+        tempSvg.appendChild(tempPath);
+        document.body.appendChild(tempSvg);
+        const bbox = tempPath.getBBox();
+        document.body.removeChild(tempSvg);
+
+        const margin = Math.max(bbox.width, bbox.height) * 0.15;
+        const vb = `${bbox.x - margin} ${bbox.y - margin} ${bbox.width + margin * 2} ${bbox.height + margin * 2}`;
+        const maskId = `m-${index}`;
+        const gradId = `g-${index}`;
+        const lakeBaseColor = getColorByType(lake.type);
+
+        container.innerHTML = `
+            <div class="svg-wrapper">
+                <svg viewBox="${vb}" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <mask id="${maskId}"><path d="${lake.d}" fill="white" /></mask>
+                        <radialGradient id="${gradId}" cx="50%" cy="50%" r="50%" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#ff66c4" stop-opacity="0.8" />
+                            <stop offset="60%" stop-color="#29A89C" stop-opacity="0.4" />
+                            <stop offset="100%" stop-color="transparent" />
+                        </radialGradient>
+                    </defs>
+                    <g mask="url(#${maskId})">
+                        <rect x="${bbox.x - margin}" y="${bbox.y - margin}" width="${bbox.width + margin * 2}" height="${bbox.height + margin * 2}" fill="${lakeBaseColor}" />
+                        <rect class="hologram-rect" x="${bbox.x - margin}" y="${bbox.y - margin}" width="${bbox.width + margin * 2}" height="${bbox.height + margin * 2}" fill="url(#${gradId})" />
+                    </g>
+                </svg>
+            </div>
+            <div class="lake-label">${lake.name}</div>
+        `;
+
+        // 마우스 추적 이벤트
+        container.addEventListener('mousemove', (e) => {
+            const rect = container.getBoundingClientRect();
+            const grad = document.getElementById(gradId);
+            if(!grad) return;
+            const relX = ((e.clientX - rect.left) / rect.width);
+            const relY = ((e.clientY - rect.top) / rect.height);
+            const targetX = bbox.x - margin + (bbox.width + margin*2) * relX;
+            const targetY = bbox.y - margin + (bbox.height + margin*2) * relY;
+            grad.setAttribute('cx', targetX);
+            grad.setAttribute('cy', targetY);
+        });
+
+        // --- 클릭 시 모달 열기 이벤트 추가 ---
+        container.addEventListener('click', () => {
+            openModal(lake, container.querySelector('svg').outerHTML);
+        });
+
+        grid.appendChild(container);
+    });
+
+    function openModal(data, svgHtml) {
+        document.getElementById('modal-title').innerText = data.name;
+        document.getElementById('modal-img').src = data.img;
+        document.getElementById('modal-desc').innerText = data.desc;
+        document.getElementById('modal-svg-target').innerHTML = svgHtml; // SVG 복사본 넣기
+        
+        // 모달 안의 SVG에서도 홀로그램 빛이 보이도록 처리
+        const modalSvg = document.querySelector('#modal-svg-target .hologram-rect');
+        if(modalSvg) modalSvg.style.opacity = '1';
+
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    // 모달 바깥쪽 클릭하면 닫히게 설정
+    window.onclick = function(event) {
+        const modal = document.getElementById('modal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+</script>
+</body>
+</html>

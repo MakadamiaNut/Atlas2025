@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>London Rain</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            overflow: hidden;
+            cursor: none;
+            font-family: 'Courier New', monospace;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.03;
+        }
+
+        .raindrop {
+            position: absolute;
+            color: #666;
+            font-size: 20px;
+            font-weight: bold;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        #umbrella {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            pointer-events: none;
+            image-rendering: pixelated;
+            transform: translate(-50%, -50%);
+        }
+
+        #soldier {
+            position: absolute;
+            bottom: 80px;
+            width: 64px;
+            height: 64px;
+            image-rendering: pixelated;
+            transition: left 0.1s linear;
+        }
+
+        #title {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        #title p {
+            font-size: 14px;
+            color: #999;
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <img id="background" src="london.png" alt="London Skyline">
+        
+        <div id="title">
+            <p>Move your cursor to protect from the rain</p>
+        </div>
+
+        <img id="umbrella" src="umbrella.png" alt="Umbrella">
+        <img id="soldier" src="soldier.png" alt="Guard">
+    </div>
+
+    <script>
+        const container = document.getElementById('container');
+        const umbrella = document.getElementById('umbrella');
+        const soldier = document.getElementById('soldier');
+        
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let soldierX = 100;
+        let soldierDirection = 1;
+        let raindrops = [];
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            umbrella.style.left = mouseX + 'px';
+            umbrella.style.top = mouseY + 'px';
+        });
+
+        function createRaindrops() {
+            const chars = ['|', '|', '|', ':'];
+            for (let i = 0; i < 80; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'raindrop';
+                drop.textContent = chars[Math.floor(Math.random() * chars.length)];
+                
+                let x;
+                do {
+                    x = Math.random() * window.innerWidth;
+                } while (Math.abs(x - mouseX) < 80);
+                
+                drop.style.left = x + 'px';
+                drop.style.top = Math.random() * window.innerHeight + 'px';
+                drop.dataset.speed = (Math.random() * 3 + 2).toString();
+                container.appendChild(drop);
+                raindrops.push(drop);
+            }
+        }
+
+        function isUnderUmbrella(x, y) {
+            const dx = Math.abs(x - mouseX);
+            return dx < 80;
+        }
+
+        function animateRain() {
+            raindrops.forEach(drop => {
+                let currentY = parseFloat(drop.style.top);
+                const speed = parseFloat(drop.dataset.speed);
+                currentY += speed;
+
+                if (currentY > window.innerHeight) {
+                    currentY = -10;
+                    let newX;
+                    do {
+                        newX = Math.random() * window.innerWidth;
+                    } while (Math.abs(newX - mouseX) < 80);
+                    drop.style.left = newX + 'px';
+                }
+
+                drop.style.top = currentY + 'px';
+
+                const x = parseFloat(drop.style.left);
+                const y = parseFloat(drop.style.top);
+                
+                if (isUnderUmbrella(x, y)) {
+                    drop.style.visibility = 'hidden';
+                } else {
+                    drop.style.visibility = 'visible';
+                }
+            });
+        }
+
+        function moveSoldier() {
+            soldierX += soldierDirection * 1.5 ;
+
+            if (soldierX >= window.innerWidth - 64) {
+                soldierX = window.innerWidth - 64;
+                soldierDirection = -1;
+                soldier.style.transform = 'scaleX(-1)';
+            }
+            if (soldierX <= 0) {
+                soldierX = 0;
+                soldierDirection = 1;
+                soldier.style.transform = 'scaleX(1)';
+            }
+
+            soldier.style.left = soldierX + 'px';
+        }
+
+        function animate() {
+            animateRain();
+            moveSoldier();
+            requestAnimationFrame(animate);
+        }
+
+        createRaindrops();
+        umbrella.style.left = mouseX + 'px';
+        umbrella.style.top = mouseY + 'px';
+        animate();
+    </script>
+</body>
+</html>
