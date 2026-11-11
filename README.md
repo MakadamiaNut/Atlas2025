@@ -55,7 +55,7 @@ python -m http.server 8000
 # http://localhost:8000
 ```
 
-Itinerary의 Mapbox 토큰은 이 사이트 전용 공개(pk.) 토큰입니다. 다른 곳에 쓰려면 자신의 토큰으로 바꿔 주세요.
+Itinerary의 Mapbox 토큰은 공개용(pk.) 토큰입니다. 다른 곳에 쓰려면 자신의 토큰으로 바꿔 주세요.
 
 ---
 
