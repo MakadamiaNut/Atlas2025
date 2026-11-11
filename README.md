@@ -1,6 +1,6 @@
 # Exchange Archive 2025
 
-University of Bristol 교환학기(2025.09–12) 동안 다닌 도시·호수·노선을 페이지마다 다른 인터랙션으로 기록한 웹 아카이브입니다.
+University of Bristol 에서의 기억을 아카이브한 개인 페이지입니다. 
 
 **Live** → https://makadamianut.github.io/Atlas2025/
 
@@ -60,21 +60,6 @@ python -m http.server 8000
 ```
 
 Itinerary의 Mapbox 토큰은 공개용(pk.) 토큰이며, Mapbox 계정에서 배포 도메인으로 사용 URL을 제한해 두었습니다. 다른 도메인에서 띄우려면 자신의 토큰으로 바꿔야 합니다.
-
-## 정비 기록 (2026.11)
-
-- 파일명을 소문자-하이픈으로 통일하고 폴더를 나눔 (대소문자를 구분하는 GitHub Pages 대응)
-- 이미지를 WebP로 바꾸고 표시 크기에 맞게 줄임. 사진의 촬영 위치(GPS) 정보 제거
-
-  | 페이지 | 이전 | 이후 |
-  |---|---|---|
-  | 허브 썸네일 8장 | 6.0MB | 0.9MB |
-  | Prism 사진 18장 | 33.8MB | 0.8MB |
-  | Atlas 지도 5장 | 15.3MB | 1.5MB |
-  | Lakes 사진 8장 | 17.7MB | 3.8MB |
-  | Paper Weight 배경 | 5.4MB | 0.2MB |
-
-- Itinerary 시작 위치에서 나던 Turf 에러, Underground·London의 모바일 가로 넘침 수정
 
 ---
 
