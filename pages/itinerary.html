@@ -209,7 +209,10 @@
 
     const src = map.getSource("route-progress-src");
     if (src) {
-      src.setData(turf.lineSliceAlong(routeLine, 0, currentDist, { units: "kilometers" }));
+      // 시작점(거리 0)에서는 잘라낼 선이 없으므로 빈 데이터를 넣는다
+      src.setData(currentDist > 0
+        ? turf.lineSliceAlong(routeLine, 0, currentDist, { units: "kilometers" })
+        : { type: "FeatureCollection", features: [] });
     }
 
     stopsFeatures.forEach((stop, index) => {
