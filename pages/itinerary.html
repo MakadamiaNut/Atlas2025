@@ -51,7 +51,7 @@
     }
     input[type="range"]::-webkit-slider-thumb{
       -webkit-appearance:none; width: 60px; height: 60px;
-      background: url("./plane.png") no-repeat center / contain; 
+      background: url("../assets/img/plane.png") no-repeat center / contain; 
       cursor: pointer;
     }
   </style>
@@ -88,8 +88,8 @@
 
   function ensureLayers() {
     map.setFog({ "range": [0.5, 10], "color": "#000", "high-color": "#29A89C", "space-color": "#000", "star-intensity": 0.5 });
-    if (!map.getSource("route")) map.addSource("route", { type: "geojson", data: "./route.geojson" });
-    if (!map.getSource("stops")) map.addSource("stops", { type: "geojson", data: "./stops.geojson", generateId: true });
+    if (!map.getSource("route")) map.addSource("route", { type: "geojson", data: "../data/route.geojson" });
+    if (!map.getSource("stops")) map.addSource("stops", { type: "geojson", data: "../data/stops.geojson", generateId: true });
 
     if (!map.getSource("route-progress-src")) {
       map.addSource("route-progress-src", {
@@ -173,8 +173,8 @@
   async function buildRouteLine() {
     try {
       const [routeRes, stopsRes] = await Promise.all([
-        fetch("./route.geojson"),
-        fetch("./stops.geojson")
+        fetch("../data/route.geojson"),
+        fetch("../data/stops.geojson")
       ]);
 
       const routeJson = await routeRes.json();
