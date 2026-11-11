@@ -1,6 +1,6 @@
 # Exchange Archive 2025
 
-University of Bristol 에서의 기억을 아카이브한 개인 페이지입니다. 
+교환학생 기간 중 기억하고 싶은 순간을 아카이브한 개인 페이지입니다. 
 
 **Live** → https://makadamianut.github.io/Atlas2025/
 
