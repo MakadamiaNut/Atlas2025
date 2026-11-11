@@ -4,24 +4,20 @@ University of Bristol 에서의 기억을 아카이브한 개인 페이지입니
 
 **Live** → https://makadamianut.github.io/Atlas2025/
 
-| 허브 | Itinerary | Prism |
-|---|---|---|
-| ![허브 화면](docs/screenshots/hub.webp) | ![Itinerary 경로 지도](docs/screenshots/itinerary.webp) | ![Prism 사진 링](docs/screenshots/prism.webp) |
 
 ## 페이지
 
 | 페이지 | 보여주는 것 |
 |---|---|
-| [Big Wheel](pages/big-wheel.html) | 다녀간 도시 이름이 관람차처럼 도는 휠 |
-| [Itinerary](pages/itinerary.html) | 슬라이더로 비행기를 움직이면 이동 경로가 그려지고 정류지가 켜지는 지구본 지도 |
-| [London](pages/london.html) | 커서로 우산을 움직여 근위병을 비에서 지키는 런던 |
-| [Atlas](pages/atlas.html) | QGIS로 만든 지도 5장. 클릭하면 제목·투영법·설명이 열림 |
-| [Prism](pages/prism.html) | 프리즘을 누르면 사진 18장이 원형으로 펼쳐지고, 사진마다 도시 이름과 색이 바뀜 |
-| [Paper Weight](pages/paperweight.html) | 지도 위를 따라다니는 돋보기 렌즈 |
-| [Underground](pages/underground.html) | 런던 지하철 노선색으로 만든 깜빡이는 로고와 노선 범례 |
-| [Lakes](pages/lakes.html) | 호수 8곳의 실제 윤곽선. 누르면 사진과 좌표·날짜 |
+| [Big Wheel](pages/big-wheel.html) | 런던아이에서 모티프를 얻은 관람차입니다. 휠이 돌며 다녀간 도시들이 하나씩 떠오르고, 브리스톨에 닿는 순간 색이 바뀝니다. |
+| [Itinerary](pages/itinerary.html) | 여행을 예약하고 메일함에 itinerary가 도착하던 순간이 가장 설렜습니다. 그 단어만으로도 마음이 부풀던 기억을 담아, 한 학기의 여정을 지구본 위에 이었습니다. |
+| [London](pages/london.html) | 하루에도 몇 번씩 구름이 몰려오고 소나기가 지나가던 도시였습니다. 커서로 우산을 움직여, 갑자기 쏟아지는 비로부터 근위병을 지켜 주세요. |
+| [Atlas](pages/atlas.html) | 머문 곳은 모두 저마다의 의미로 남았습니다. 그중 가장 오래 기억하고 싶은 브리스톨 해협, 트롬쇠, 몽블랑, 레이콕을 지도로 조판했습니다. |
+| [Prism](pages/prism.html) | 햇볕이 닿는 순간마다 장면이 무지갯빛으로 번지는 것을 느꼈습니다. 여행 중 만난 그 황홀한 빛깔의 사진들을 프리즘 하나에 모았습니다. |
+| [Paper Weight](pages/paperweight.html) | 리버티 백화점에서 한참을 들여다보던 존 데리안의 문진은, 끝내 사지 못하고 영국에 두고 온 물건입니다. 볼록렌즈로 그 질감을 되살려, 디지털 공간에서나마 나만의 문진을 갖기로 했습니다. |
+| [Underground](pages/underground.html) | 선명한 노선색, 재치 있는 역 이름까지, 런던에서 지하철의 매력에 다시 빠졌습니다. 노선도를 알파벳으로 잘라내어 UNDERGROUND를 완성했습니다. |
+| [Lakes](pages/lakes.html) | 키프로스의 염호, 샤모니의 인공호, 블레드와 레만까지, QGIS로 호수의 윤곽을 추출해 담았습니다. 커서를 올리면 홀로그램처럼 빛납니다. |
 
-`pages/bounce-ball.html`(픽셀 테마 고도 바운스)은 실험 페이지라 허브에는 연결하지 않았습니다.
 
 ## 데이터 흐름
 
